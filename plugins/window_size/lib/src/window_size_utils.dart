@@ -87,3 +87,23 @@ Future<Size> getWindowMinSize() async {
 Future<Size> getWindowMaxSize() async {
   return WindowSizeChannel.instance.getWindowMaxSize();
 }
+
+void toggleFullscreen() async {
+  WindowSizeChannel.instance.toggleFullscreen();
+}
+
+void closeWindow() {
+  WindowSizeChannel.instance.closeWindow();
+}
+
+void minimumWindow() {
+  WindowSizeChannel.instance.minimumWindow();
+}
+
+void dragWindow() {
+  WindowSizeChannel.instance.dragWindow();
+}
+
+Future<bool> isFullscreen() async {
+  return WindowSizeChannel.instance.isFullscreen();
+}

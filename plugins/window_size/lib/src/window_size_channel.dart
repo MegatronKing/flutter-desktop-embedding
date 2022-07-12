@@ -90,6 +90,12 @@ const String _getWindowMaximumSizeMethod = 'getWindowMaximumSize';
 /// be visible.
 const String _setWindowVisibilityMethod = 'setWindowVisibility';
 
+const String _toggleFullscreenMethod = 'toggleFullscreen';
+const String _minimumWindowMethod = 'minimumWindow';
+const String _closeWindowMethod = 'closeWindow';
+const String _dragWindowMethod = 'dragWindow';
+const String _isFullscreenMethod = 'isFullscreen';
+
 // Keys for screen and window maps returned by _getScreenListMethod.
 
 /// The frame of a screen or window. The value is a list of four doubles:
@@ -202,6 +208,26 @@ class WindowSizeChannel {
     final response =
         await _platformChannel.invokeMethod(_getWindowMinimumSizeMethod);
     return _sizeFromWHList(List<double>.from(response.cast<double>()));
+  }
+
+  void toggleFullscreen() async {
+    await _platformChannel.invokeMapMethod(_toggleFullscreenMethod);
+  }
+
+  void closeWindow() async {
+    await _platformChannel.invokeMapMethod(_closeWindowMethod);
+  }
+
+  void minimumWindow() async {
+    await _platformChannel.invokeMapMethod(_minimumWindowMethod);
+  }
+
+  void dragWindow() async {
+    await _platformChannel.invokeMapMethod(_dragWindowMethod);
+  }
+
+  Future<bool> isFullscreen() async {
+    return await _platformChannel.invokeMethod(_isFullscreenMethod);
   }
 
   // Window maximum size unconstrained is passed over the channel as -1.

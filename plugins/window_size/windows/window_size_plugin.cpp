@@ -40,6 +40,11 @@ const char kSetWindowMinimumSize[] = "setWindowMinimumSize";
 const char kSetWindowMaximumSize[] = "setWindowMaximumSize";
 const char kSetWindowTitleMethod[] = "setWindowTitle";
 const char ksetWindowVisibilityMethod[] = "setWindowVisibility";
+const char kToggleFullscreenMethod[] = "toggleFullscreen";
+const char kMinimumWindowMethod[] = "minimumWindow";
+const char kCloseWindowMethod[] = "closeWindow";
+const char kDragWindowMethod[] = "dragWindow";
+const char kIsFullscreenMethod[] = "isFullscreen";
 const char kFrameKey[] = "frame";
 const char kVisibleFrameKey[] = "visibleFrame";
 const char kScaleFactorKey[] = "scaleFactor";
@@ -244,6 +249,41 @@ void WindowSizePlugin::HandleMethodCall(
     }
     ::ShowWindow(GetRootWindow(registrar_->GetView()),
                  *visible ? SW_SHOW : SW_HIDE);
+    result->Success();
+  } else if (method_call.method_name().compare(kToggleFullscreenMethod) ==
+             0) {
+    HWND handle = GetRootWindow(registrar_->GetView());
+    WINDOWPLACEMENT placement;
+    GetWindowPlacement(handle, &placement);
+    if (placement.showCmd == SW_MAXIMIZE) {
+      placement.showCmd = SW_NORMAL;
+      SetWindowPlacement(handle, &placement);
+    } else {
+      placement.showCmd = SW_MAXIMIZE;
+      SetWindowPlacement(handle, &placement);
+    }          
+    result->Success();
+  } else if (method_call.method_name().compare(kMinimumWindowMethod) ==
+             0) {
+    HWND handle = GetRootWindow(registrar_->GetView());
+    ShowWindow(handle, SW_MINIMIZE);
+    result->Success();
+  } else if (method_call.method_name().compare(kCloseWindowMethod) ==
+             0) {
+    HWND handle = GetRootWindow(registrar_->GetView());
+    PostMessage(handle, WM_CLOSE, 0, 0);
+    result->Success();
+  } else if (method_call.method_name().compare(kIsFullscreenMethod) ==
+             0) {
+    HWND handle = GetRootWindow(registrar_->GetView());
+    WINDOWPLACEMENT placement;
+    GetWindowPlacement(handle, &placement);          
+    result->Success(EncodableValue(placement.showCmd == SW_MAXIMIZE));
+  } else if (method_call.method_name().compare(kDragWindowMethod) ==
+             0) {
+    ReleaseCapture();
+    HWND handle = GetRootWindow(registrar_->GetView());
+    SendMessage(handle, WM_SYSCOMMAND, SC_MOVE | HTCAPTION, 0);
     result->Success();
   } else {
     result->NotImplemented();
