@@ -27,14 +27,12 @@ Future<Null> setApplicationMenu(List<NativeSubmenu> menuSpec) async {
 }
 
 Future<Null> hookApplicationMenu({
-  required int group, 
-  required int index, 
+  required int id, 
   String? label,
   VoidCallback? onSelected,
 }) async {
   await MenuChannel.instance.hookMenu(
-    group: group, 
-    index: index, 
+    id: id, 
     label: label,
     onSelected: onSelected,
   );

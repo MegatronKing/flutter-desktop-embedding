@@ -26,10 +26,9 @@ static NSString *const kShortcutSpecialKey = @"specialKey";
 static NSString *const kShortcutKeyModifiers = @"keyModifiers";
 static NSString *const kEnabledKey = @"enabled";
 static NSString *const kCheckedKey = @"checked";
+static NSString *const kOverrideActionKey = @"overrideAction";
 static NSString *const kChildrenKey = @"children";
 static NSString *const kDividerKey = @"isDivider";
-static NSString *const kGroupKey = @"group";
-static NSString *const kIndexKey = @"index";
 
 static const int kFlutterShortcutModifierMeta = 1 << 0;
 static const int kFlutterShortcutModifierShift = 1 << 1;
@@ -154,26 +153,40 @@ static NSEventModifierFlags KeyEquivalentModifierMaskForModifiers(NSNumber *modi
   }
 }
 
-- (void)hookMenu:(NSDictionary *)hook {
-  NSMenu *mainMenu = NSApp.mainMenu;
-  NSInteger group = ((NSNumber *)hook[kGroupKey]).intValue;
-  NSInteger index = ((NSNumber *)hook[kIndexKey]).intValue;
-  NSString *label = hook[kLabelKey];
-  NSMenu *groupMenu = [mainMenu itemAtIndex:group].submenu;
-  if (label) {
-    if (index == -1) {
-      groupMenu.title = label;
-    } else {
-      NSMenuItem *item = [groupMenu itemAtIndex:index];
-      item.title = label;
+- (NSMenuItem *)findMenuItemByTag:(NSMenu *)menu tag:(NSInteger)tag {
+  for (NSInteger i = 0; i < menu.numberOfItems; i++) {
+    NSMenuItem *item = [menu itemAtIndex:i];
+    if (item.tag == tag) {
+      return item;
+    }
+    if (!item.hasSubmenu) {
+      continue;
+    }
+    NSMenuItem *result = [self findMenuItemByTag:(item.submenu) tag: tag];
+    if (result) {
+      return result;
     }
   }
-  NSNumber *boxedID = hook[kIdKey];
-  if (boxedID) {
-    NSMenuItem *item = [groupMenu itemAtIndex:index];
-    item.tag = boxedID.intValue;
-    item.target = self;
-    item.action = @selector(flutterMenuItemSelected:);
+  return NULL;
+}
+
+- (void)hookMenu:(NSDictionary *)hook {
+  NSMenu *mainMenu = NSApp.mainMenu;
+  NSInteger tag = ((NSNumber *)hook[kIdKey]).intValue;
+  NSString *label = hook[kLabelKey];
+  NSNumber *overrideAction = hook[kOverrideActionKey];
+  NSMenuItem *item = [self findMenuItemByTag:mainMenu tag:tag];
+  if (item) {
+    if (label) {
+      item.title = label;
+      if (item.hasSubmenu) {
+        item.submenu.title = label;
+      }
+    }
+    if (overrideAction) {
+      item.target = self;
+      item.action = @selector(flutterMenuItemSelected:);
+    }
   }
 }
 

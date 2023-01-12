@@ -47,9 +47,6 @@ const String _kIdKey = 'id';
 /// The label that should be displayed for the menu, as a string.
 const String _kLabelKey = 'label';
 
-const String _kGroupKey = 'group';
-const String _kIndexKey = 'index';
-
 /// The string corresponding to the shortcut key equivalent without modifiers.
 ///
 /// When menu support moves into Flutter itself, this will likely use keyId.
@@ -76,6 +73,7 @@ const String _kShortcutKeyModifiers = 'keyModifiers';
 const String _kEnabledKey = 'enabled';
 
 const String _kCheckedKey = 'checked';
+const String _kOverrideActionKey = 'overrideAction';
 
 /// Menu items that should be shown as a submenu of this item, as an array.
 const String _kChildrenKey = 'children';
@@ -154,13 +152,11 @@ class MenuChannel {
   }
 
   Future<Null> hookMenu({
-    required int group,
-    required int index,
+    required int id,
     String? label,
     VoidCallback? onSelected,
   }) async {
     try {
-      final id = (group + 1) * 10000 + index;
       if (onSelected != null) {
         _hookSelectionCallbacks[id] = onSelected;
       } else {
@@ -168,11 +164,10 @@ class MenuChannel {
       }
       await _platformChannel.invokeMethod(
         _kMenuHookMethod, {
-          _kGroupKey: group,
-          _kIndexKey: index,
+          _kIdKey: id,
           _kLabelKey: label,
           if (onSelected != null)
-            _kIdKey: id
+            _kOverrideActionKey: true,
         }
       );
     } on PlatformException catch (e) {
