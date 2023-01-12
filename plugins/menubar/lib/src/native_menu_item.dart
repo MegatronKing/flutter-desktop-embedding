@@ -29,6 +29,7 @@ class NativeMenuItem extends AbstractNativeMenuItem {
     required String label,
     this.shortcut,
     this.onSelected,
+    this.checked = false,
   }) : super(label);
 
   /// The callback to call whenever the menu item is selected.
@@ -45,6 +46,8 @@ class NativeMenuItem extends AbstractNativeMenuItem {
   /// Example: a Save menu item would likely use:
   ///   LogicalKeySet(LogicalKeyboardKey.meta, LogicalKeyboardKey.keyS)
   final LogicalKeySet? shortcut;
+
+  final bool checked;
 }
 
 /// A menu item continaing a submenu.
@@ -52,11 +55,16 @@ class NativeMenuItem extends AbstractNativeMenuItem {
 /// The item itself can't be selected, it just displays the submenu.
 class NativeSubmenu extends AbstractNativeMenuItem {
   /// Creates a new submenu with the given [label] and [children].
-  const NativeSubmenu({required String label, required this.children})
-      : super(label);
+  const NativeSubmenu({
+    required String label, 
+    required this.children,
+    this.checked = false,
+  }) : super(label);
 
   /// The menu items contained in the submenu.
   final List<AbstractNativeMenuItem> children;
+
+  final bool checked;
 }
 
 /// A menu item that serves as a divider, generally drawn as a line.

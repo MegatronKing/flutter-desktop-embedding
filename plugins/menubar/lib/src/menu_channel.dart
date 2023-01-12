@@ -70,6 +70,8 @@ const String _kShortcutKeyModifiers = 'keyModifiers';
 /// the defualt is to enabled the item.
 const String _kEnabledKey = 'enabled';
 
+const String _kCheckedKey = 'checked';
+
 /// Menu items that should be shown as a submenu of this item, as an array.
 const String _kChildrenKey = 'children';
 
@@ -169,6 +171,7 @@ class MenuChannel {
       if (item is NativeSubmenu) {
         representation[_kChildrenKey] =
             _channelRepresentationForMenu(item.children);
+        representation[_kCheckedKey] = item.checked;    
       } else if (item is NativeMenuItem) {
         final handler = item.onSelected;
         if (handler == null) {
@@ -176,6 +179,7 @@ class MenuChannel {
         } else {
           representation[_kIdKey] = _storeMenuCallback(handler);
         }
+        representation[_kCheckedKey] = item.checked;
         final shortcut = item.shortcut;
         if (shortcut != null) {
           _addShortcutToRepresentation(shortcut, representation);

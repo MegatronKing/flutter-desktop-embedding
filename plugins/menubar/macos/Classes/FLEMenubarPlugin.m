@@ -24,6 +24,7 @@ static NSString *const kShortcutKeyEquivalent = @"keyEquivalent";
 static NSString *const kShortcutSpecialKey = @"specialKey";
 static NSString *const kShortcutKeyModifiers = @"keyModifiers";
 static NSString *const kEnabledKey = @"enabled";
+static NSString *const kCheckedKey = @"checked";
 static NSString *const kChildrenKey = @"children";
 static NSString *const kDividerKey = @"isDivider";
 
@@ -185,7 +186,10 @@ static NSEventModifierFlags KeyEquivalentModifierMaskForModifiers(NSNumber *modi
     if (enabled) {
       item.enabled = enabled.boolValue;
     }
-
+    NSNumber *checked = representation[kCheckedKey];
+    if (checked.boolValue) {
+      [item setState: NSOnState];
+    }
     NSArray *children = representation[kChildrenKey];
     if (children) {
       NSMenu *submenu = [[NSMenu alloc] initWithTitle:title];
