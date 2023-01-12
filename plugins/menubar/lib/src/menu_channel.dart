@@ -28,6 +28,8 @@ const String _kMenuChannelName = 'flutter/menubar';
 /// of menus that should be set as top-level menu items.
 const String _kMenuSetMethod = 'Menubar.SetMenu';
 
+const String _kMenuHookMethod = 'Menubar.HookMenu';
+
 /// The method name for the Dart-side callback called when a menu item is
 /// selected.
 //
@@ -44,6 +46,9 @@ const String _kIdKey = 'id';
 
 /// The label that should be displayed for the menu, as a string.
 const String _kLabelKey = 'label';
+
+const String _kGroupKey = 'group';
+const String _kIndexKey = 'index';
 
 /// The string corresponding to the shortcut key equivalent without modifiers.
 ///
@@ -146,6 +151,25 @@ class MenuChannel {
     }
   }
 
+  Future<Null> hookMenu({
+    required int group, 
+    required int index, 
+    String? label,
+    VoidCallback? onSelected,
+  }) async {
+    try {
+      await _platformChannel.invokeMethod(
+        _kMenuHookMethod, {
+          _kGroupKey: group,
+          _kIndexKey: index,
+          _kLabelKey: label,
+        }
+      );
+    } on PlatformException catch (e) {
+      print('Platform exception setting menu: ${e.message}');
+    }
+  }
+
   /// Converts [menus] to a representation that can be sent in the arguments to
   /// [_kMenuSetMethod].
   ///
@@ -171,7 +195,7 @@ class MenuChannel {
       if (item is NativeSubmenu) {
         representation[_kChildrenKey] =
             _channelRepresentationForMenu(item.children);
-        representation[_kCheckedKey] = item.checked;    
+        representation[_kCheckedKey] = item.checked;
       } else if (item is NativeMenuItem) {
         final handler = item.onSelected;
         if (handler == null) {

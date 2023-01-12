@@ -13,6 +13,8 @@
 // limitations under the License.
 import 'dart:async';
 
+import 'package:flutter/material.dart';
+
 import 'menu_channel.dart';
 import 'native_menu_item.dart';
 
@@ -22,4 +24,18 @@ import 'native_menu_item.dart';
 /// [NativeMenuDivider]s will be removed.
 Future<Null> setApplicationMenu(List<NativeSubmenu> menuSpec) async {
   await MenuChannel.instance.setMenu(menuSpec);
+}
+
+Future<Null> hookApplicationMenu({
+  required int group, 
+  required int index, 
+  String? label,
+  VoidCallback? onSelected,
+}) async {
+  await MenuChannel.instance.hookMenu(
+    group: group, 
+    index: index, 
+    label: label,
+    onSelected: onSelected,
+  );
 }

@@ -17,6 +17,7 @@
 // See menu_channel.dart for documentation.
 static NSString *const kChannelName = @"flutter/menubar";
 static NSString *const kMenuSetMethod = @"Menubar.SetMenu";
+static NSString *const kMenuHookMethod = @"Menubar.HookMenu";
 static NSString *const kMenuItemSelectedCallbackMethod = @"Menubar.SelectedCallback";
 static NSString *const kIdKey = @"id";
 static NSString *const kLabelKey = @"label";
@@ -27,6 +28,8 @@ static NSString *const kEnabledKey = @"enabled";
 static NSString *const kCheckedKey = @"checked";
 static NSString *const kChildrenKey = @"children";
 static NSString *const kDividerKey = @"isDivider";
+static NSString *const kGroupKey = @"group";
+static NSString *const kIndexKey = @"index";
 
 static const int kFlutterShortcutModifierMeta = 1 << 0;
 static const int kFlutterShortcutModifierShift = 1 << 1;
@@ -151,6 +154,20 @@ static NSEventModifierFlags KeyEquivalentModifierMaskForModifiers(NSNumber *modi
   }
 }
 
+- (void)hookMenu:(NSDictionary *)hook {
+  NSMenu *mainMenu = NSApp.mainMenu;
+  NSInteger group = ((NSNumber *)hook[kGroupKey]).intValue;
+  NSInteger index = ((NSNumber *)hook[kIndexKey]).intValue;
+  NSString *label = hook[kLabelKey];
+  NSMenu *groupMenu = [mainMenu itemAtIndex:group].submenu;
+  if (index == -1) {
+    groupMenu.title = label;
+  } else {
+    NSMenuItem *item = [groupMenu itemAtIndex:index];
+    item.title = label;
+  }
+}
+
 /**
  * Constructs and returns an NSMenuItem corresponding to the item in |representation|, including
  * recursively creating children if it has a submenu.
@@ -226,6 +243,10 @@ static NSEventModifierFlags KeyEquivalentModifierMaskForModifiers(NSNumber *modi
   if ([call.method isEqualToString:kMenuSetMethod]) {
     NSArray *menus = call.arguments;
     [self rebuildFlutterMenusFromRepresentation:menus];
+    result(nil);
+  } else if ([call.method isEqualToString:kMenuHookMethod]) {
+    NSDictionary *hook = call.arguments;
+    [self hookMenu:hook];
     result(nil);
   } else {
     result(FlutterMethodNotImplemented);
