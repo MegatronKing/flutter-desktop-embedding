@@ -160,11 +160,20 @@ static NSEventModifierFlags KeyEquivalentModifierMaskForModifiers(NSNumber *modi
   NSInteger index = ((NSNumber *)hook[kIndexKey]).intValue;
   NSString *label = hook[kLabelKey];
   NSMenu *groupMenu = [mainMenu itemAtIndex:group].submenu;
-  if (index == -1) {
-    groupMenu.title = label;
-  } else {
+  if (label) {
+    if (index == -1) {
+      groupMenu.title = label;
+    } else {
+      NSMenuItem *item = [groupMenu itemAtIndex:index];
+      item.title = label;
+    }
+  }
+  NSNumber *boxedID = hook[kIdKey];
+  if (boxedID) {
     NSMenuItem *item = [groupMenu itemAtIndex:index];
-    item.title = label;
+    item.tag = boxedID.intValue;
+    item.target = self;
+    item.action = @selector(flutterMenuItemSelected:);
   }
 }
 

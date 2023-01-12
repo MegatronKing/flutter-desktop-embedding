@@ -122,6 +122,8 @@ class MenuChannel {
   /// those menu items.
   final Map<int, VoidCallback> _selectionCallbacks = {};
 
+  final Map<int, VoidCallback> _hookSelectionCallbacks = {};
+
   /// The ID to use the next time a menu item needs an ID assigned.
   int _nextMenuItemId = 1;
 
@@ -152,17 +154,25 @@ class MenuChannel {
   }
 
   Future<Null> hookMenu({
-    required int group, 
-    required int index, 
+    required int group,
+    required int index,
     String? label,
     VoidCallback? onSelected,
   }) async {
     try {
+      final id = (group + 1) * 10000 + index;
+      if (onSelected != null) {
+        _hookSelectionCallbacks[id] = onSelected;
+      } else {
+        _hookSelectionCallbacks.remove(id);
+      }
       await _platformChannel.invokeMethod(
         _kMenuHookMethod, {
           _kGroupKey: group,
           _kIndexKey: index,
           _kLabelKey: label,
+          if (onSelected != null)
+            _kIdKey: id
         }
       );
     } on PlatformException catch (e) {
@@ -305,7 +315,7 @@ class MenuChannel {
         return;
       }
       final int menuItemId = methodCall.arguments;
-      final callback = _selectionCallbacks[menuItemId];
+      final callback = _selectionCallbacks[menuItemId] ?? _hookSelectionCallbacks[menuItemId];
       if (callback == null) {
         throw Exception('Unknown menu item ID $menuItemId');
       }
