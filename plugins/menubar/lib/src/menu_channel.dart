@@ -265,15 +265,11 @@ class MenuChannel {
               'Menu items must have exactly one non-modifier key.');
         }
 
-        if (key.keyLabel.isNotEmpty) {
+        final specialKey = _shortcutSpecialKeyValues[key];
+        if (specialKey == null) {
           channelRepresentation[_kShortcutKeyEquivalent] =
               key.keyLabel.toLowerCase();
         } else {
-          final specialKey = _shortcutSpecialKeyValues[key];
-          if (specialKey == null) {
-            throw ArgumentError('Unsupported menu shortcut key: $key\n'
-                'Please add this key to the special key mapping.');
-          }
           channelRepresentation[_kShortcutSpecialKey] = specialKey;
         }
         hasNonModifierKey = true;
