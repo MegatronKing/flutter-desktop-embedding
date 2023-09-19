@@ -298,11 +298,12 @@ std::optional<LRESULT> WindowSizePlugin::HandleWindowProc(HWND hwnd,
   switch (message) {
     case WM_GETMINMAXINFO:
       MINMAXINFO *info = reinterpret_cast<MINMAXINFO *>(lparam);
+      double scale_factor = FlutterDesktopGetDpiForHWND(hwnd) / kBaseDpi;
       // For the special "unconstrained" values, leave the defaults.
-      if (min_size_.x != 0) info->ptMinTrackSize.x = min_size_.x;
-      if (min_size_.y != 0) info->ptMinTrackSize.y = min_size_.y;
-      if (max_size_.x != -1) info->ptMaxTrackSize.x = max_size_.x;
-      if (max_size_.y != -1) info->ptMaxTrackSize.y = max_size_.y;
+      if (min_size_.x != 0) info->ptMinTrackSize.x = static_cast<LONG>(min_size_.x * scale_factor);
+      if (min_size_.y != 0) info->ptMinTrackSize.y = static_cast<LONG>(min_size_.y * scale_factor);
+      if (max_size_.x != -1) info->ptMaxTrackSize.x = static_cast<LONG>(max_size_.x * scale_factor);
+      if (max_size_.y != -1) info->ptMaxTrackSize.y = static_cast<LONG>(max_size_.y * scale_factor);
       result = 0;
       break;
   }
