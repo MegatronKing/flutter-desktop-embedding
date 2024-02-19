@@ -34,6 +34,7 @@ NSString *const kFrameKey = @"frame";
 NSString *const kVisibleFrameKey = @"visibleFrame";
 NSString *const kScaleFactorKey = @"scaleFactor";
 NSString *const kScreenKey = @"screen";
+NSString *const kToggleFullscreenKey = @"toggleFullscreen";
 
 /**
  * Returns the max Y coordinate across all screens.
@@ -182,8 +183,9 @@ double ChannelRepresentationForMaxDimension(double size) { return size == FLT_MA
       [self.flutterView.window orderOut:self];
     }
     methodResult = nil;
-  } else {
-    methodResult = FlutterMethodNotImplemented;
+  } else if ([call.method isEqualToString:kToggleFullscreenKey]) {
+    [self.flutterView.window toggleFullScreen:nil];
+    methodResult = nil;
   }
   result(methodResult);
 }
