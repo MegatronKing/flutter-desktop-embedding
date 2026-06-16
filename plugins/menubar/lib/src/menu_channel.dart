@@ -265,16 +265,18 @@ class MenuChannel {
               'Menu items must have exactly one non-modifier key.');
         }
 
-        if (key.keyLabel.isNotEmpty) {
+        // Prefer special-key encoding (e.g., F1-F12) since keyLabel may be
+        // multi-character text like "F1", which macOS keyEquivalent cannot
+        // represent correctly as a single key.
+        final specialKey = _shortcutSpecialKeyValues[key];
+        if (specialKey != null) {
+          channelRepresentation[_kShortcutSpecialKey] = specialKey;
+        } else if (key.keyLabel.isNotEmpty) {
           channelRepresentation[_kShortcutKeyEquivalent] =
               key.keyLabel.toLowerCase();
         } else {
-          final specialKey = _shortcutSpecialKeyValues[key];
-          if (specialKey == null) {
-            throw ArgumentError('Unsupported menu shortcut key: $key\n'
-                'Please add this key to the special key mapping.');
-          }
-          channelRepresentation[_kShortcutSpecialKey] = specialKey;
+          throw ArgumentError('Unsupported menu shortcut key: $key\n'
+              'Please add this key to the special key mapping.');
         }
         hasNonModifierKey = true;
       }
