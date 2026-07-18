@@ -44,6 +44,7 @@ const char kToggleFullscreenMethod[] = "toggleFullscreen";
 const char kMinimumWindowMethod[] = "minimumWindow";
 const char kCloseWindowMethod[] = "closeWindow";
 const char kDragWindowMethod[] = "dragWindow";
+const char kDragTopMethod[] = "dragTop";
 const char kIsFullscreenMethod[] = "isFullscreen";
 const char kFrameKey[] = "frame";
 const char kVisibleFrameKey[] = "visibleFrame";
@@ -261,7 +262,7 @@ void WindowSizePlugin::HandleMethodCall(
     } else {
       placement.showCmd = SW_MAXIMIZE;
       SetWindowPlacement(handle, &placement);
-    }          
+    }
     result->Success();
   } else if (method_call.method_name().compare(kMinimumWindowMethod) ==
              0) {
@@ -277,13 +278,22 @@ void WindowSizePlugin::HandleMethodCall(
              0) {
     HWND handle = GetRootWindow(registrar_->GetView());
     WINDOWPLACEMENT placement;
-    GetWindowPlacement(handle, &placement);          
+    GetWindowPlacement(handle, &placement);
     result->Success(EncodableValue(placement.showCmd == SW_MAXIMIZE));
   } else if (method_call.method_name().compare(kDragWindowMethod) ==
              0) {
     ReleaseCapture();
     HWND handle = GetRootWindow(registrar_->GetView());
     SendMessage(handle, WM_SYSCOMMAND, SC_MOVE | HTCAPTION, 0);
+    result->Success();
+  } else if (method_call.method_name().compare(kDragTopMethod) == 0) {
+    ReleaseCapture();
+    HWND handle = GetRootWindow(registrar_->GetView());
+    POINT cursor = {};
+    ::GetCursorPos(&cursor);
+    ::ScreenToClient(handle, &cursor);
+    ::SendMessage(handle, WM_NCLBUTTONDOWN, HTTOP,
+                  MAKELPARAM(cursor.x, cursor.y));
     result->Success();
   } else {
     result->NotImplemented();
