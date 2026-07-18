@@ -44,6 +44,7 @@ const char kToggleFullscreenMethod[] = "toggleFullscreen";
 const char kMinimumWindowMethod[] = "minimumWindow";
 const char kCloseWindowMethod[] = "closeWindow";
 const char kDragWindowMethod[] = "dragWindow";
+const char kDragTopMethod[] = "dragTop";
 const char kIsFullscreenMethod[] = "isFullscreen";
 const char kFrameKey[] = "frame";
 const char kVisibleFrameKey[] = "visibleFrame";
@@ -261,7 +262,7 @@ void WindowSizePlugin::HandleMethodCall(
     } else {
       placement.showCmd = SW_MAXIMIZE;
       SetWindowPlacement(handle, &placement);
-    }          
+    }
     result->Success();
   } else if (method_call.method_name().compare(kMinimumWindowMethod) ==
              0) {
@@ -277,13 +278,22 @@ void WindowSizePlugin::HandleMethodCall(
              0) {
     HWND handle = GetRootWindow(registrar_->GetView());
     WINDOWPLACEMENT placement;
-    GetWindowPlacement(handle, &placement);          
+    GetWindowPlacement(handle, &placement);
     result->Success(EncodableValue(placement.showCmd == SW_MAXIMIZE));
   } else if (method_call.method_name().compare(kDragWindowMethod) ==
              0) {
     ReleaseCapture();
     HWND handle = GetRootWindow(registrar_->GetView());
     SendMessage(handle, WM_SYSCOMMAND, SC_MOVE | HTCAPTION, 0);
+    result->Success();
+  } else if (method_call.method_name().compare(kDragTopMethod) == 0) {
+    ReleaseCapture();
+    HWND handle = GetRootWindow(registrar_->GetView());
+    POINT cursor = {};
+    ::GetCursorPos(&cursor);
+    ::ScreenToClient(handle, &cursor);
+    ::SendMessage(handle, WM_NCLBUTTONDOWN, HTTOP,
+                  MAKELPARAM(cursor.x, cursor.y));
     result->Success();
   } else {
     result->NotImplemented();
@@ -298,11 +308,12 @@ std::optional<LRESULT> WindowSizePlugin::HandleWindowProc(HWND hwnd,
   switch (message) {
     case WM_GETMINMAXINFO:
       MINMAXINFO *info = reinterpret_cast<MINMAXINFO *>(lparam);
+      double scale_factor = FlutterDesktopGetDpiForHWND(hwnd) / kBaseDpi;
       // For the special "unconstrained" values, leave the defaults.
-      if (min_size_.x != 0) info->ptMinTrackSize.x = min_size_.x;
-      if (min_size_.y != 0) info->ptMinTrackSize.y = min_size_.y;
-      if (max_size_.x != -1) info->ptMaxTrackSize.x = max_size_.x;
-      if (max_size_.y != -1) info->ptMaxTrackSize.y = max_size_.y;
+      if (min_size_.x != 0) info->ptMinTrackSize.x = static_cast<LONG>(min_size_.x * scale_factor);
+      if (min_size_.y != 0) info->ptMinTrackSize.y = static_cast<LONG>(min_size_.y * scale_factor);
+      if (max_size_.x != -1) info->ptMaxTrackSize.x = static_cast<LONG>(max_size_.x * scale_factor);
+      if (max_size_.y != -1) info->ptMaxTrackSize.y = static_cast<LONG>(max_size_.y * scale_factor);
       result = 0;
       break;
   }

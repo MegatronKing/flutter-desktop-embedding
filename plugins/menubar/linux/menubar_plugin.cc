@@ -238,10 +238,10 @@ FlMenubarPlugin* fl_menubar_plugin_new(FlPluginRegistrar* registrar) {
 
     // Set an empty menubar now, as GTK doesn't detect it being changed later
     // on. https://gitlab.gnome.org/GNOME/gtk/-/issues/2834
-    self->menu = g_menu_new();
-    gtk_application_set_menubar(app, G_MENU_MODEL(self->menu));
-    g_object_notify(G_OBJECT(gtk_settings_get_default()),
-                    "gtk-shell-shows-menubar");
+    // self->menu = g_menu_new();
+    // gtk_application_set_menubar(app, G_MENU_MODEL(self->menu));
+    // g_object_notify(G_OBJECT(gtk_settings_get_default()),
+    //                 "gtk-shell-shows-menubar");
   }
 
   return self;
