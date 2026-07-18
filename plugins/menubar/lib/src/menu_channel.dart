@@ -277,6 +277,7 @@ class MenuChannel {
         } else {
           throw ArgumentError('Unsupported menu shortcut key: $key\n'
               'Please add this key to the special key mapping.');
+        }
         hasNonModifierKey = true;
       }
     }
