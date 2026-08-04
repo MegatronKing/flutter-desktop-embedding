@@ -48,6 +48,10 @@ const char kDragTopMethod[] = "dragTop";
 const char kDragLeftMethod[] = "dragLeft";
 const char kDragRightMethod[] = "dragRight";
 const char kDragBottomMethod[] = "dragBottom";
+const char kDragTopLeftMethod[] = "dragTopLeft";
+const char kDragTopRightMethod[] = "dragTopRight";
+const char kDragBottomLeftMethod[] = "dragBottomLeft";
+const char kDragBottomRightMethod[] = "dragBottomRight";
 const char kIsFullscreenMethod[] = "isFullscreen";
 const char kFrameKey[] = "frame";
 const char kVisibleFrameKey[] = "visibleFrame";
@@ -323,6 +327,42 @@ void WindowSizePlugin::HandleMethodCall(
     ::GetCursorPos(&cursor);
     ::ScreenToClient(handle, &cursor);
     ::SendMessage(handle, WM_NCLBUTTONDOWN, HTBOTTOM,
+                  MAKELPARAM(cursor.x, cursor.y));
+    result->Success();
+  } else if (method_call.method_name().compare(kDragTopLeftMethod) == 0) {
+    ReleaseCapture();
+    HWND handle = GetRootWindow(registrar_->GetView());
+    POINT cursor = {};
+    ::GetCursorPos(&cursor);
+    ::ScreenToClient(handle, &cursor);
+    ::SendMessage(handle, WM_NCLBUTTONDOWN, HTTOPLEFT,
+                  MAKELPARAM(cursor.x, cursor.y));
+    result->Success();
+  } else if (method_call.method_name().compare(kDragTopRightMethod) == 0) {
+    ReleaseCapture();
+    HWND handle = GetRootWindow(registrar_->GetView());
+    POINT cursor = {};
+    ::GetCursorPos(&cursor);
+    ::ScreenToClient(handle, &cursor);
+    ::SendMessage(handle, WM_NCLBUTTONDOWN, HTTOPRIGHT,
+                  MAKELPARAM(cursor.x, cursor.y));
+    result->Success();
+  } else if (method_call.method_name().compare(kDragBottomLeftMethod) == 0) {
+    ReleaseCapture();
+    HWND handle = GetRootWindow(registrar_->GetView());
+    POINT cursor = {};
+    ::GetCursorPos(&cursor);
+    ::ScreenToClient(handle, &cursor);
+    ::SendMessage(handle, WM_NCLBUTTONDOWN, HTBOTTOMLEFT,
+                  MAKELPARAM(cursor.x, cursor.y));
+    result->Success();
+  } else if (method_call.method_name().compare(kDragBottomRightMethod) == 0) {
+    ReleaseCapture();
+    HWND handle = GetRootWindow(registrar_->GetView());
+    POINT cursor = {};
+    ::GetCursorPos(&cursor);
+    ::ScreenToClient(handle, &cursor);
+    ::SendMessage(handle, WM_NCLBUTTONDOWN, HTBOTTOMRIGHT,
                   MAKELPARAM(cursor.x, cursor.y));
     result->Success();
   } else {
