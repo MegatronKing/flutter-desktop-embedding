@@ -428,7 +428,9 @@ static void on_window_event_after(GtkWidget*, GdkEvent* event,
   FlWindowSizePlugin* self = FL_WINDOW_SIZE_PLUGIN(user_data);
   if (event->type == GDK_ENTER_NOTIFY && self->is_dragging) {
     self->is_dragging = false;
-    emit_button_release(self, event->crossing.time, event->crossing.state);
+    emit_button_release(
+        self, event->crossing.time,
+        static_cast<GdkModifierType>(event->crossing.state));
   }
 }
 
