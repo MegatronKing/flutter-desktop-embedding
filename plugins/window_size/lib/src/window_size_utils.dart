@@ -108,6 +108,18 @@ void dragTop() {
   WindowSizeChannel.instance.dragTop();
 }
 
+void dragLeft() {
+  WindowSizeChannel.instance.dragLeft();
+}
+
+void dragRight() {
+  WindowSizeChannel.instance.dragRight();
+}
+
+void dragBottom() {
+  WindowSizeChannel.instance.dragBottom();
+}
+
 Future<bool> isFullscreen() async {
   return WindowSizeChannel.instance.isFullscreen();
 }

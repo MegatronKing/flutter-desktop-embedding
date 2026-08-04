@@ -95,6 +95,9 @@ const String _minimumWindowMethod = 'minimumWindow';
 const String _closeWindowMethod = 'closeWindow';
 const String _dragWindowMethod = 'dragWindow';
 const String _dragTopMethod = 'dragTop';
+const String _dragLeftMethod = 'dragLeft';
+const String _dragRightMethod = 'dragRight';
+const String _dragBottomMethod = 'dragBottom';
 const String _isFullscreenMethod = 'isFullscreen';
 
 // Keys for screen and window maps returned by _getScreenListMethod.
@@ -229,6 +232,18 @@ class WindowSizeChannel {
 
   void dragTop() async {
     await _platformChannel.invokeMapMethod(_dragTopMethod);
+  }
+
+  void dragLeft() async {
+    await _platformChannel.invokeMapMethod(_dragLeftMethod);
+  }
+
+  void dragRight() async {
+    await _platformChannel.invokeMapMethod(_dragRightMethod);
+  }
+
+  void dragBottom() async {
+    await _platformChannel.invokeMapMethod(_dragBottomMethod);
   }
 
   Future<bool> isFullscreen() async {

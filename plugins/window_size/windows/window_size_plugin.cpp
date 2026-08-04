@@ -45,6 +45,9 @@ const char kMinimumWindowMethod[] = "minimumWindow";
 const char kCloseWindowMethod[] = "closeWindow";
 const char kDragWindowMethod[] = "dragWindow";
 const char kDragTopMethod[] = "dragTop";
+const char kDragLeftMethod[] = "dragLeft";
+const char kDragRightMethod[] = "dragRight";
+const char kDragBottomMethod[] = "dragBottom";
 const char kIsFullscreenMethod[] = "isFullscreen";
 const char kFrameKey[] = "frame";
 const char kVisibleFrameKey[] = "visibleFrame";
@@ -293,6 +296,33 @@ void WindowSizePlugin::HandleMethodCall(
     ::GetCursorPos(&cursor);
     ::ScreenToClient(handle, &cursor);
     ::SendMessage(handle, WM_NCLBUTTONDOWN, HTTOP,
+                  MAKELPARAM(cursor.x, cursor.y));
+    result->Success();
+  } else if (method_call.method_name().compare(kDragLeftMethod) == 0) {
+    ReleaseCapture();
+    HWND handle = GetRootWindow(registrar_->GetView());
+    POINT cursor = {};
+    ::GetCursorPos(&cursor);
+    ::ScreenToClient(handle, &cursor);
+    ::SendMessage(handle, WM_NCLBUTTONDOWN, HTLEFT,
+                  MAKELPARAM(cursor.x, cursor.y));
+    result->Success();
+  } else if (method_call.method_name().compare(kDragRightMethod) == 0) {
+    ReleaseCapture();
+    HWND handle = GetRootWindow(registrar_->GetView());
+    POINT cursor = {};
+    ::GetCursorPos(&cursor);
+    ::ScreenToClient(handle, &cursor);
+    ::SendMessage(handle, WM_NCLBUTTONDOWN, HTRIGHT,
+                  MAKELPARAM(cursor.x, cursor.y));
+    result->Success();
+  } else if (method_call.method_name().compare(kDragBottomMethod) == 0) {
+    ReleaseCapture();
+    HWND handle = GetRootWindow(registrar_->GetView());
+    POINT cursor = {};
+    ::GetCursorPos(&cursor);
+    ::ScreenToClient(handle, &cursor);
+    ::SendMessage(handle, WM_NCLBUTTONDOWN, HTBOTTOM,
                   MAKELPARAM(cursor.x, cursor.y));
     result->Success();
   } else {

@@ -31,6 +31,15 @@ const char kSetWindowTitleMethod[] = "setWindowTitle";
 const char ksetWindowVisibilityMethod[] = "setWindowVisibility";
 const char kGetWindowMinimumSizeMethod[] = "getWindowMinimumSize";
 const char kGetWindowMaximumSizeMethod[] = "getWindowMaximumSize";
+const char kCloseWindowMethod[] = "closeWindow";
+const char kMinimumWindowMethod[] = "minimumWindow";
+const char kDragWindowMethod[] = "dragWindow";
+const char kDragTopMethod[] = "dragTop";
+const char kDragLeftMethod[] = "dragLeft";
+const char kDragRightMethod[] = "dragRight";
+const char kDragBottomMethod[] = "dragBottom";
+const char kToggleFullscreenMethod[] = "toggleFullscreen";
+const char kIsFullscreenMethod[] = "isFullscreen";
 const char kFrameKey[] = "frame";
 const char kVisibleFrameKey[] = "visibleFrame";
 const char kScaleFactorKey[] = "scaleFactor";
@@ -335,6 +344,146 @@ static FlMethodResponse* get_window_maximum_size(FlWindowSizePlugin* self) {
   return FL_METHOD_RESPONSE(fl_method_success_response_new(size));
 }
 
+// Closes the window.
+static FlMethodResponse* close_window(FlWindowSizePlugin* self) {
+  GtkWindow* window = get_window(self);
+  if (window == nullptr) {
+    return FL_METHOD_RESPONSE(
+        fl_method_error_response_new(kNoScreenError, nullptr, nullptr));
+  }
+  gtk_window_close(window);
+  return FL_METHOD_RESPONSE(fl_method_success_response_new(nullptr));
+}
+
+// Minimizes (iconifies) the window.
+static FlMethodResponse* minimum_window(FlWindowSizePlugin* self) {
+  GtkWindow* window = get_window(self);
+  if (window == nullptr) {
+    return FL_METHOD_RESPONSE(
+        fl_method_error_response_new(kNoScreenError, nullptr, nullptr));
+  }
+  gtk_window_iconify(window);
+  return FL_METHOD_RESPONSE(fl_method_success_response_new(nullptr));
+}
+
+// Begins a window move drag operation.
+static FlMethodResponse* drag_window(FlWindowSizePlugin* self) {
+  GtkWindow* window = get_window(self);
+  if (window == nullptr) {
+    return FL_METHOD_RESPONSE(
+        fl_method_error_response_new(kNoScreenError, nullptr, nullptr));
+  }
+  // Use the current mouse position and begin a window drag.
+  GdkDisplay* display = get_display(self);
+  GdkSeat* seat = gdk_display_get_default_seat(display);
+  GdkDevice* device = gdk_seat_get_pointer(seat);
+  gint x, y;
+  gdk_device_get_position(device, nullptr, &x, &y);
+  gtk_window_begin_move_drag(window, 1, x, y, gtk_get_current_event_time());
+  return FL_METHOD_RESPONSE(fl_method_success_response_new(nullptr));
+}
+
+// Begins a window resize drag from the top edge.
+static FlMethodResponse* drag_top(FlWindowSizePlugin* self) {
+  GtkWindow* window = get_window(self);
+  if (window == nullptr) {
+    return FL_METHOD_RESPONSE(
+        fl_method_error_response_new(kNoScreenError, nullptr, nullptr));
+  }
+  GdkDisplay* display = get_display(self);
+  GdkSeat* seat = gdk_display_get_default_seat(display);
+  GdkDevice* device = gdk_seat_get_pointer(seat);
+  gint x, y;
+  gdk_device_get_position(device, nullptr, &x, &y);
+  gtk_window_begin_resize_drag(window, GDK_WINDOW_EDGE_NORTH, 1, x, y,
+                               gtk_get_current_event_time());
+  return FL_METHOD_RESPONSE(fl_method_success_response_new(nullptr));
+}
+
+// Begins a window resize drag from the left edge.
+static FlMethodResponse* drag_left(FlWindowSizePlugin* self) {
+  GtkWindow* window = get_window(self);
+  if (window == nullptr) {
+    return FL_METHOD_RESPONSE(
+        fl_method_error_response_new(kNoScreenError, nullptr, nullptr));
+  }
+  GdkDisplay* display = get_display(self);
+  GdkSeat* seat = gdk_display_get_default_seat(display);
+  GdkDevice* device = gdk_seat_get_pointer(seat);
+  gint x, y;
+  gdk_device_get_position(device, nullptr, &x, &y);
+  gtk_window_begin_resize_drag(window, GDK_WINDOW_EDGE_WEST, 1, x, y,
+                               gtk_get_current_event_time());
+  return FL_METHOD_RESPONSE(fl_method_success_response_new(nullptr));
+}
+
+// Begins a window resize drag from the right edge.
+static FlMethodResponse* drag_right(FlWindowSizePlugin* self) {
+  GtkWindow* window = get_window(self);
+  if (window == nullptr) {
+    return FL_METHOD_RESPONSE(
+        fl_method_error_response_new(kNoScreenError, nullptr, nullptr));
+  }
+  GdkDisplay* display = get_display(self);
+  GdkSeat* seat = gdk_display_get_default_seat(display);
+  GdkDevice* device = gdk_seat_get_pointer(seat);
+  gint x, y;
+  gdk_device_get_position(device, nullptr, &x, &y);
+  gtk_window_begin_resize_drag(window, GDK_WINDOW_EDGE_EAST, 1, x, y,
+                               gtk_get_current_event_time());
+  return FL_METHOD_RESPONSE(fl_method_success_response_new(nullptr));
+}
+
+// Begins a window resize drag from the bottom edge.
+static FlMethodResponse* drag_bottom(FlWindowSizePlugin* self) {
+  GtkWindow* window = get_window(self);
+  if (window == nullptr) {
+    return FL_METHOD_RESPONSE(
+        fl_method_error_response_new(kNoScreenError, nullptr, nullptr));
+  }
+  GdkDisplay* display = get_display(self);
+  GdkSeat* seat = gdk_display_get_default_seat(display);
+  GdkDevice* device = gdk_seat_get_pointer(seat);
+  gint x, y;
+  gdk_device_get_position(device, nullptr, &x, &y);
+  gtk_window_begin_resize_drag(window, GDK_WINDOW_EDGE_SOUTH, 1, x, y,
+                               gtk_get_current_event_time());
+  return FL_METHOD_RESPONSE(fl_method_success_response_new(nullptr));
+}
+
+static bool is_window_fullscreen(GtkWindow* window) {
+  GdkWindow* gdk_window = gtk_widget_get_window(GTK_WIDGET(window));
+  return gdk_window != nullptr &&
+         (gdk_window_get_state(gdk_window) & GDK_WINDOW_STATE_FULLSCREEN) != 0;
+}
+
+// Toggles the fullscreen state of the window.
+static FlMethodResponse* toggle_fullscreen(FlWindowSizePlugin* self) {
+  GtkWindow* window = get_window(self);
+  if (window == nullptr) {
+    return FL_METHOD_RESPONSE(
+        fl_method_error_response_new(kNoScreenError, nullptr, nullptr));
+  }
+  if (is_window_fullscreen(window)) {
+    gtk_window_unfullscreen(window);
+  } else {
+    gtk_window_fullscreen(window);
+  }
+  return FL_METHOD_RESPONSE(fl_method_success_response_new(nullptr));
+}
+
+// Checks whether the window is fullscreen.
+static FlMethodResponse* is_fullscreen(FlWindowSizePlugin* self) {
+  GtkWindow* window = get_window(self);
+  if (window == nullptr) {
+    return FL_METHOD_RESPONSE(
+        fl_method_error_response_new(kNoScreenError, nullptr, nullptr));
+  }
+  bool fullscreen = is_window_fullscreen(window);
+  return FL_METHOD_RESPONSE(
+      fl_method_success_response_new(fl_value_new_bool(fullscreen)));
+}
+
 // Called when a method call is received from Flutter.
 static void method_call_cb(FlMethodChannel* channel, FlMethodCall* method_call,
                            gpointer user_data) {
@@ -362,6 +511,24 @@ static void method_call_cb(FlMethodChannel* channel, FlMethodCall* method_call,
     response = get_window_minimum_size(self);
   } else if (strcmp(method, kGetWindowMaximumSizeMethod) == 0) {
     response = get_window_maximum_size(self);
+  } else if (strcmp(method, kCloseWindowMethod) == 0) {
+    response = close_window(self);
+  } else if (strcmp(method, kMinimumWindowMethod) == 0) {
+    response = minimum_window(self);
+  } else if (strcmp(method, kDragWindowMethod) == 0) {
+    response = drag_window(self);
+  } else if (strcmp(method, kDragTopMethod) == 0) {
+    response = drag_top(self);
+  } else if (strcmp(method, kDragLeftMethod) == 0) {
+    response = drag_left(self);
+  } else if (strcmp(method, kDragRightMethod) == 0) {
+    response = drag_right(self);
+  } else if (strcmp(method, kDragBottomMethod) == 0) {
+    response = drag_bottom(self);
+  } else if (strcmp(method, kToggleFullscreenMethod) == 0) {
+    response = toggle_fullscreen(self);
+  } else if (strcmp(method, kIsFullscreenMethod) == 0) {
+    response = is_fullscreen(self);
   } else {
     response = FL_METHOD_RESPONSE(fl_method_not_implemented_response_new());
   }
