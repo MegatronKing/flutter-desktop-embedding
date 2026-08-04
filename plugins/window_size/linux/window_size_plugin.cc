@@ -55,6 +55,13 @@ struct _FlWindowSizePlugin {
 
   // Requested window geometry.
   GdkGeometry window_geometry;
+
+  GtkWidget* event_box;
+  bool is_dragging;
+  bool is_drag_pending;
+  gint drag_root_x;
+  gint drag_root_y;
+  guint32 drag_timestamp;
 };
 
 G_DEFINE_TYPE(FlWindowSizePlugin, fl_window_size_plugin, g_object_get_type())
@@ -366,6 +373,100 @@ static FlMethodResponse* minimum_window(FlWindowSizePlugin* self) {
   return FL_METHOD_RESPONSE(fl_method_success_response_new(nullptr));
 }
 
+static GtkWidget* find_event_box(GtkWidget* widget) {
+  if (GTK_IS_EVENT_BOX(widget)) {
+    return widget;
+  }
+  if (!GTK_IS_CONTAINER(widget)) {
+    return nullptr;
+  }
+
+  GList* children = gtk_container_get_children(GTK_CONTAINER(widget));
+  GtkWidget* event_box = nullptr;
+  for (GList* child = children; child != nullptr && event_box == nullptr;
+       child = child->next) {
+    event_box = find_event_box(GTK_WIDGET(child->data));
+  }
+  g_list_free(children);
+  return event_box;
+}
+
+static void emit_button_release(FlWindowSizePlugin* self, guint32 timestamp,
+                                GdkModifierType state) {
+  if (self->event_box == nullptr) {
+    return;
+  }
+
+  GdkWindow* event_window = gtk_widget_get_window(self->event_box);
+  GdkDisplay* display = gtk_widget_get_display(self->event_box);
+  GdkSeat* seat = gdk_display_get_default_seat(display);
+  GdkDevice* device = gdk_seat_get_pointer(seat);
+  gint root_x, root_y;
+  gint origin_x, origin_y;
+  gdk_device_get_position(device, nullptr, &root_x, &root_y);
+  gdk_window_get_origin(event_window, &origin_x, &origin_y);
+
+  GdkEvent* event = gdk_event_new(GDK_BUTTON_RELEASE);
+  event->button.window = GDK_WINDOW(g_object_ref(event_window));
+  event->button.send_event = TRUE;
+  event->button.time = timestamp;
+  event->button.x = root_x - origin_x;
+  event->button.y = root_y - origin_y;
+  event->button.x_root = root_x;
+  event->button.y_root = root_y;
+  event->button.state = state;
+  event->button.button = 1;
+  gdk_event_set_device(event, device);
+  gboolean handled = FALSE;
+  g_signal_emit_by_name(self->event_box, "button-release-event", event,
+                        &handled);
+  gdk_event_free(event);
+}
+
+static void on_window_event_after(GtkWidget*, GdkEvent* event,
+                                  gpointer user_data) {
+  FlWindowSizePlugin* self = FL_WINDOW_SIZE_PLUGIN(user_data);
+  if (event->type == GDK_ENTER_NOTIFY && self->is_dragging) {
+    self->is_dragging = false;
+    emit_button_release(self, event->crossing.time, event->crossing.state);
+  }
+}
+
+static bool is_window_fullscreen(GtkWindow* window);
+
+static void begin_window_drag(FlWindowSizePlugin* self, GtkWindow* window,
+                              gint root_x, gint root_y, guint32 timestamp) {
+  self->is_drag_pending = false;
+  self->is_dragging = true;
+  gtk_window_begin_move_drag(window, 1, root_x, root_y, timestamp);
+}
+
+static gboolean on_window_state_event(GtkWidget* widget,
+                                      GdkEventWindowState* event,
+                                      gpointer user_data) {
+  FlWindowSizePlugin* self = FL_WINDOW_SIZE_PLUGIN(user_data);
+  if (!self->is_drag_pending ||
+      (event->changed_mask & GDK_WINDOW_STATE_FULLSCREEN) == 0 ||
+      (event->new_window_state & GDK_WINDOW_STATE_FULLSCREEN) != 0) {
+    return FALSE;
+  }
+
+  GdkDisplay* display = gtk_widget_get_display(widget);
+  GdkSeat* seat = gdk_display_get_default_seat(display);
+  GdkDevice* device = gdk_seat_get_pointer(seat);
+  GdkModifierType state;
+  gdk_window_get_device_position(gtk_widget_get_window(widget), device, nullptr,
+                                 nullptr, &state);
+  if ((state & GDK_BUTTON1_MASK) == 0) {
+    self->is_drag_pending = false;
+    return FALSE;
+  }
+
+  begin_window_drag(self, GTK_WINDOW(widget), self->drag_root_x,
+                    self->drag_root_y, self->drag_timestamp);
+  return FALSE;
+}
+
 // Begins a window move drag operation.
 static FlMethodResponse* drag_window(FlWindowSizePlugin* self) {
   GtkWindow* window = get_window(self);
@@ -379,7 +480,16 @@ static FlMethodResponse* drag_window(FlWindowSizePlugin* self) {
   GdkDevice* device = gdk_seat_get_pointer(seat);
   gint x, y;
   gdk_device_get_position(device, nullptr, &x, &y);
-  gtk_window_begin_move_drag(window, 1, x, y, gtk_get_current_event_time());
+  guint32 timestamp = gtk_get_current_event_time();
+  if (is_window_fullscreen(window)) {
+    self->is_drag_pending = true;
+    self->drag_root_x = x;
+    self->drag_root_y = y;
+    self->drag_timestamp = timestamp;
+    gtk_window_unfullscreen(window);
+  } else {
+    begin_window_drag(self, window, x, y, timestamp);
+  }
   return FL_METHOD_RESPONSE(fl_method_success_response_new(nullptr));
 }
 
@@ -395,6 +505,7 @@ static FlMethodResponse* drag_top(FlWindowSizePlugin* self) {
   GdkDevice* device = gdk_seat_get_pointer(seat);
   gint x, y;
   gdk_device_get_position(device, nullptr, &x, &y);
+  self->is_dragging = true;
   gtk_window_begin_resize_drag(window, GDK_WINDOW_EDGE_NORTH, 1, x, y,
                                gtk_get_current_event_time());
   return FL_METHOD_RESPONSE(fl_method_success_response_new(nullptr));
@@ -412,6 +523,7 @@ static FlMethodResponse* drag_left(FlWindowSizePlugin* self) {
   GdkDevice* device = gdk_seat_get_pointer(seat);
   gint x, y;
   gdk_device_get_position(device, nullptr, &x, &y);
+  self->is_dragging = true;
   gtk_window_begin_resize_drag(window, GDK_WINDOW_EDGE_WEST, 1, x, y,
                                gtk_get_current_event_time());
   return FL_METHOD_RESPONSE(fl_method_success_response_new(nullptr));
@@ -429,6 +541,7 @@ static FlMethodResponse* drag_right(FlWindowSizePlugin* self) {
   GdkDevice* device = gdk_seat_get_pointer(seat);
   gint x, y;
   gdk_device_get_position(device, nullptr, &x, &y);
+  self->is_dragging = true;
   gtk_window_begin_resize_drag(window, GDK_WINDOW_EDGE_EAST, 1, x, y,
                                gtk_get_current_event_time());
   return FL_METHOD_RESPONSE(fl_method_success_response_new(nullptr));
@@ -446,6 +559,7 @@ static FlMethodResponse* drag_bottom(FlWindowSizePlugin* self) {
   GdkDevice* device = gdk_seat_get_pointer(seat);
   gint x, y;
   gdk_device_get_position(device, nullptr, &x, &y);
+  self->is_dragging = true;
   gtk_window_begin_resize_drag(window, GDK_WINDOW_EDGE_SOUTH, 1, x, y,
                                gtk_get_current_event_time());
   return FL_METHOD_RESPONSE(fl_method_success_response_new(nullptr));
@@ -541,6 +655,12 @@ static void method_call_cb(FlMethodChannel* channel, FlMethodCall* method_call,
 static void fl_window_size_plugin_dispose(GObject* object) {
   FlWindowSizePlugin* self = FL_WINDOW_SIZE_PLUGIN(object);
 
+  if (self->registrar != nullptr) {
+    GtkWindow* window = get_window(self);
+    if (window != nullptr) {
+      g_signal_handlers_disconnect_by_data(window, self);
+    }
+  }
   g_clear_object(&self->registrar);
   g_clear_object(&self->channel);
 
@@ -556,6 +676,12 @@ static void fl_window_size_plugin_init(FlWindowSizePlugin* self) {
   self->window_geometry.min_height = -1;
   self->window_geometry.max_width = G_MAXINT;
   self->window_geometry.max_height = G_MAXINT;
+  self->event_box = nullptr;
+  self->is_dragging = false;
+  self->is_drag_pending = false;
+  self->drag_root_x = 0;
+  self->drag_root_y = 0;
+  self->drag_timestamp = GDK_CURRENT_TIME;
 }
 
 FlWindowSizePlugin* fl_window_size_plugin_new(FlPluginRegistrar* registrar) {
@@ -570,6 +696,14 @@ FlWindowSizePlugin* fl_window_size_plugin_new(FlPluginRegistrar* registrar) {
                             kChannelName, FL_METHOD_CODEC(codec));
   fl_method_channel_set_method_call_handler(self->channel, method_call_cb,
                                             g_object_ref(self), g_object_unref);
+
+  GtkWindow* window = get_window(self);
+  self->event_box =
+      find_event_box(GTK_WIDGET(fl_plugin_registrar_get_view(registrar)));
+  g_signal_connect(window, "event-after", G_CALLBACK(on_window_event_after),
+                   self);
+  g_signal_connect(window, "window-state-event",
+                   G_CALLBACK(on_window_state_event), self);
 
   return self;
 }
