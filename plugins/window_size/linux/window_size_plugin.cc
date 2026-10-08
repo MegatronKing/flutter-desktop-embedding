@@ -526,17 +526,6 @@ static FlMethodResponse* drag_window(FlWindowSizePlugin* self) {
                   : 0.5;
     self->drag_y_offset = MAX(y - window_y, 0);
     self->drag_timestamp = timestamp;
-    gtk_window_unfullscreen(window);
-  } else if (is_window_maximized(window)) {
-    gint window_x, window_y, width, height;
-    gtk_window_get_position(window, &window_x, &window_y);
-    gtk_window_get_size(window, &width, &height);
-    self->is_drag_pending = true;
-    self->drag_x_ratio =
-        width > 0 ? CLAMP(static_cast<gdouble>(x - window_x) / width, 0.0, 1.0)
-                  : 0.5;
-    self->drag_y_offset = MAX(y - window_y, 0);
-    self->drag_timestamp = timestamp;
     gtk_window_unmaximize(window);
   } else {
     begin_window_drag(self, window, x, y, timestamp);
@@ -701,7 +690,7 @@ static FlMethodResponse* toggle_fullscreen(FlWindowSizePlugin* self) {
     return FL_METHOD_RESPONSE(
         fl_method_error_response_new(kNoScreenError, nullptr, nullptr));
   }
-  if (is_window_maximized(window)) {
+  if (is_window_fullscreen(window)) {
     gtk_window_unmaximize(window);
   } else {
     gtk_window_maximize(window);
@@ -716,7 +705,7 @@ static FlMethodResponse* is_fullscreen(FlWindowSizePlugin* self) {
     return FL_METHOD_RESPONSE(
         fl_method_error_response_new(kNoScreenError, nullptr, nullptr));
   }
-  bool fullscreen = is_window_maximized(window);
+  bool fullscreen = is_window_fullscreen(window);
   return FL_METHOD_RESPONSE(
       fl_method_success_response_new(fl_value_new_bool(fullscreen)));
 }
