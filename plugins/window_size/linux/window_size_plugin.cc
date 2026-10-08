@@ -487,11 +487,6 @@ static gboolean on_window_state_event(GtkWidget*,
                                       gpointer user_data) {
   FlWindowSizePlugin* self = FL_WINDOW_SIZE_PLUGIN(user_data);
   if (!self->is_drag_pending ||
-      (event->changed_mask & GDK_WINDOW_STATE_FULLSCREEN) == 0 ||
-      (event->new_window_state & GDK_WINDOW_STATE_FULLSCREEN) != 0) {
-    return FALSE;
-  }
-  if (!self->is_drag_pending ||
       (event->changed_mask & GDK_WINDOW_STATE_MAXIMIZED) == 0 ||
       (event->new_window_state & GDK_WINDOW_STATE_MAXIMIZED) != 0) {
     return FALSE;
