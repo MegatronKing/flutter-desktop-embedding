@@ -491,6 +491,11 @@ static gboolean on_window_state_event(GtkWidget*,
       (event->new_window_state & GDK_WINDOW_STATE_FULLSCREEN) != 0) {
     return FALSE;
   }
+  if (!self->is_drag_pending ||
+      (event->changed_mask & GDK_WINDOW_STATE_MAXIMIZED) == 0 ||
+      (event->new_window_state & GDK_WINDOW_STATE_MAXIMIZED) != 0) {
+    return FALSE;
+  }
 
   g_idle_add_full(G_PRIORITY_DEFAULT_IDLE, resume_pending_window_drag,
                   g_object_ref(self), g_object_unref);
@@ -522,6 +527,17 @@ static FlMethodResponse* drag_window(FlWindowSizePlugin* self) {
     self->drag_y_offset = MAX(y - window_y, 0);
     self->drag_timestamp = timestamp;
     gtk_window_unfullscreen(window);
+  } else if (is_window_maximized(window)) {
+    gint window_x, window_y, width, height;
+    gtk_window_get_position(window, &window_x, &window_y);
+    gtk_window_get_size(window, &width, &height);
+    self->is_drag_pending = true;
+    self->drag_x_ratio =
+        width > 0 ? CLAMP(static_cast<gdouble>(x - window_x) / width, 0.0, 1.0)
+                  : 0.5;
+    self->drag_y_offset = MAX(y - window_y, 0);
+    self->drag_timestamp = timestamp;
+    gtk_window_unmaximize(window);
   } else {
     begin_window_drag(self, window, x, y, timestamp);
   }
@@ -675,7 +691,7 @@ static FlMethodResponse* drag_bottom_right(FlWindowSizePlugin* self) {
 static bool is_window_fullscreen(GtkWindow* window) {
   GdkWindow* gdk_window = gtk_widget_get_window(GTK_WIDGET(window));
   return gdk_window != nullptr &&
-         (gdk_window_get_state(gdk_window) & GDK_WINDOW_STATE_FULLSCREEN) != 0;
+         (gdk_window_get_state(gdk_window) & GDK_WINDOW_STATE_MAXIMIZED) != 0;
 }
 
 // Toggles the fullscreen state of the window.
@@ -685,10 +701,10 @@ static FlMethodResponse* toggle_fullscreen(FlWindowSizePlugin* self) {
     return FL_METHOD_RESPONSE(
         fl_method_error_response_new(kNoScreenError, nullptr, nullptr));
   }
-  if (is_window_fullscreen(window)) {
-    gtk_window_unfullscreen(window);
+  if (is_window_maximized(window)) {
+    gtk_window_unmaximize(window);
   } else {
-    gtk_window_fullscreen(window);
+    gtk_window_maximize(window);
   }
   return FL_METHOD_RESPONSE(fl_method_success_response_new(nullptr));
 }
@@ -700,7 +716,7 @@ static FlMethodResponse* is_fullscreen(FlWindowSizePlugin* self) {
     return FL_METHOD_RESPONSE(
         fl_method_error_response_new(kNoScreenError, nullptr, nullptr));
   }
-  bool fullscreen = is_window_fullscreen(window);
+  bool fullscreen = is_window_maximized(window);
   return FL_METHOD_RESPONSE(
       fl_method_success_response_new(fl_value_new_bool(fullscreen)));
 }
